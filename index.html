@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Builder Exam OS</title>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#12161f; --panel2:#171c27; --line:#232a38;
+  --txt:#e7ecf3; --dim:#8b94a7; --accent:#4f9cff; --green:#2fd282; --red:#ff5c6c; --amber:#ffb020;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:96px}
+header{padding:calc(14px + env(safe-area-inset-top)) 20px 6px;display:flex;align-items:baseline;gap:10px}
+header h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
+header .sub{color:var(--dim);font-size:12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:rgba(13,16,22,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:50}
+nav button{flex:1;background:none;border:none;color:var(--dim);padding:10px 0 max(12px,env(safe-area-inset-bottom));font-size:11px;font-weight:700;cursor:pointer}
+nav button.on{color:var(--accent)}
+nav button .ic{display:block;font-size:21px;margin-bottom:2px}
+main{max-width:680px;margin:0 auto;padding:6px 16px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.fcard{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);min-height:290px;padding:26px 22px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;position:relative}
+.fcard .tag{position:absolute;top:14px;left:16px;font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.fcard .src{position:absolute;bottom:12px;right:16px;font-size:11px;color:var(--dim)}
+.fcard .q{font-size:18px;font-weight:600;line-height:1.45}
+.fcard .a{font-size:16px;color:var(--green);margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);line-height:1.5}
+.row{display:flex;gap:10px;margin-top:14px}
+.btn{flex:1;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px;font-weight:700;cursor:pointer}
+.btn.good{color:var(--green)} .btn.bad{color:var(--red)} .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.meta-line{display:flex;justify-content:space-between;color:var(--dim);font-size:12px;margin-top:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:12px}
+.panel h3{font-size:14px;margin-bottom:6px}
+.panel .hint{color:var(--dim);font-size:12px;margin-bottom:4px}
+.bar{height:7px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.list-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list-item:last-child{border-bottom:none}
+.list-item .t{font-weight:600;font-size:14px}
+.list-item .d{color:var(--dim);font-size:12px}
+.list-item.playing .t{color:var(--accent)}
+.play-ic{color:var(--accent);font-size:20px;flex:0 0 auto}
+.player{position:sticky;top:8px;z-index:10;background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-top:8px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.player .title{font-weight:700;font-size:14px;min-height:18px}
+.player .now{font-size:12px;color:var(--dim);min-height:16px}
+.seek{width:100%;margin-top:10px;accent-color:var(--accent)}
+.tp{display:flex;align-items:center;gap:12px;margin-top:8px;justify-content:center}
+.tp button{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:50%;width:44px;height:44px;font-size:15px;cursor:pointer;font-weight:700}
+.tp button.big{width:56px;height:56px;background:var(--accent);border-color:var(--accent);font-size:21px;color:#fff}
+.tp .rate{width:auto;border-radius:999px;padding:0 14px;font-size:13px}
+select{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px}
+.opt-row{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px;color:var(--dim)}
+.big-num{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.stat .lbl{color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.05em}
+.pass{color:var(--green)} .fail{color:var(--red)}
+.para-live{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:12px;font-size:16px;line-height:1.65}
+.caps{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:6px 16px;margin-top:12px;max-height:44vh;overflow-y:auto;scroll-behavior:smooth}
+.cap{padding:10px 2px;color:var(--dim);font-size:15px;line-height:1.55;border-bottom:1px solid var(--line);cursor:pointer;transition:color .2s}
+.cap:last-child{border-bottom:none}
+.cap.on{color:var(--txt);font-weight:600}
+.cap.on::before{content:"▸ ";color:var(--accent)}
+.cap .qa{font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--accent);margin-right:6px}
+.qopt{display:block;width:100%;text-align:left;padding:13px 14px;margin-top:8px;border-radius:11px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:15px;cursor:pointer}
+.qopt.right{border-color:var(--green);color:var(--green)}
+.qopt.wrong{border-color:var(--red);color:var(--red)}
+.qwhy{margin-top:10px;padding:12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:13px;line-height:1.5}
+.badge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px}
+.badge.pass{background:rgba(47,210,130,.12)} .badge.fail{background:rgba(255,92,108,.12)}
+.hide{display:none}
+.empty{color:var(--dim);text-align:center;padding:40px 20px}
+.pill{font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.pill.hd{color:var(--green);border-color:var(--green)}
+</style>
+</head>
+<body>
+<header><h1>Builder Exam OS</h1><span class="sub" id="bankMeta"></span></header>
+<main id="main"></main>
+<nav>
+  <button data-v="audio" class="on"><span class="ic">🎧</span>Listen</button>
+  <button data-v="study"><span class="ic">🃏</span>Study</button>
+  <button data-v="quiz"><span class="ic">⏱</span>Quiz</button>
+  <button data-v="stats"><span class="ic">📊</span>Stats</button>
+</nav>
+<audio id="mp3" preload="metadata"></audio>
+<script>const MP3_OVERRIDE="audio/";</script>
+<script src="bank.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const el = h => { const d = document.createElement('div'); d.innerHTML = h; return d.firstElementChild; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const B = (typeof BANK2 !== 'undefined') ? BANK2 : {meta:{},domains:[],cards:[],lectures:[]};
+const MP3_BASE = (typeof MP3_OVERRIDE !== 'undefined') ? MP3_OVERRIDE : '../corpus/audio/mp3/';
+$('#bankMeta').textContent = `${B.cards.length} cards · ${B.lectures.length} chapters`;
+
+const store = JSON.parse(localStorage.getItem('mib2')||'{}');
+store.cards = store.cards||{}; store.quiz = store.quiz||[]; store.pos = store.pos||{};
+const save = () => localStorage.setItem('mib2', JSON.stringify(store));
+const scoreOf = id => store.cards[id]?.s ?? 0;
+const domLabel = d => d.replace(/^\d+_/,'').replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const fmt = t => isFinite(t) ? `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}` : '–:–';
+
+let fDomain='all', fSection='all';
+const pool = () => B.cards.filter(c => (fDomain==='all'||c.domain===fDomain) && (fSection==='all'||c.section===fSection));
+function weightedPick(cards){
+  const w = cards.map(c => Math.max(1, 6 - scoreOf(c.id)));
+  let r = Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<cards.length;i++){ r-=w[i]; if(r<=0) return cards[i]; }
+  return cards[cards.length-1];
+}
+function chipsHTML(){
+  const s=[['all','B&L + Trade'],['bl','Business & Law'],['trade','Trade']].map(([v,l])=>`<button class="chip ${fSection===v?'on':''}" data-s="${v}">${l}</button>`).join('');
+  const d=['all',...B.domains].map(x=>`<button class="chip ${fDomain===x?'on':''}" data-d="${x}">${x==='all'?'All domains':domLabel(x)}</button>`).join('');
+  return `<div class="chips">${s}</div><div class="chips">${d}</div>`;
+}
+function bindChips(root,rr){
+  root.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{fDomain=b.dataset.d;rr();});
+  root.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{fSection=b.dataset.s;rr();});
+}
+
+/* ============ AUDIO (MP3 audiobook, TTS fallback) ============ */
+const mp3 = $('#mp3');
+let AP = { track:null, list:[], mp3ok:null, cues:null, capIdx:-1, quiz:null };   // track = {id,title,file,kind}
+const cueCache = {};
+function loadCues(t){
+  AP.cues=null; AP.capIdx=-1;
+  const url=t.file.replace(/\.mp3$/,'.cues.json');
+  if(cueCache[t.id]){ AP.cues=cueCache[t.id]; renderCaps(); return; }
+  if(!location.protocol.startsWith('http')) return;
+  fetch(url).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j) return;
+    const cues=(j.paras||j.items||[]).map(c=>({t:c.t,text:c.text,type:c.type||'p'}));
+    cueCache[t.id]=cues;
+    if(AP.track&&AP.track.id===t.id){ AP.cues=cues; renderCaps(); }
+  }).catch(()=>{});
+}
+function domainOf(t){ return t.id.replace(/_(lecture|drill)$/,''); }
+function quizFor(t){ return (B.quizzes||{})[domainOf(t)]||null; }
+function tracks(){
+  const lec = B.lectures.map(L=>({id:L.id,title:L.title,file:MP3_BASE+L.id+'.mp3',kind:'Chapter',words:L.words}));
+  const drl = B.domains.map(d=>({id:d+'_drill',title:domLabel(d)+' — drill',file:MP3_BASE+d+'_drill.mp3',kind:'Drill'}));
+  return {lec,drl};
+}
+function playTrack(t){
+  AP.track=t; AP.quiz=null;
+  loadCues(t);
+  mp3.src=t.file;
+  mp3.playbackRate=+(store.rate||1);
+  const p=store.pos[t.id];
+  mp3.currentTime=0;
+  mp3.play().then(()=>{ if(p&&p>5) mp3.currentTime=p-3; setMedia(t); }).catch(()=>{});
+  renderAudio();
+}
+mp3.addEventListener('timeupdate',()=>{
+  if(!AP.track) return;
+  store.pos[AP.track.id]=mp3.currentTime; if(Math.floor(mp3.currentTime)%5===0) save();
+  const s=$('#seek'); if(s&&!s.dragging){ s.max=mp3.duration||0; s.value=mp3.currentTime; }
+  const n=$('#pNow'); if(n) n.textContent=`${fmt(mp3.currentTime)} / ${fmt(mp3.duration)} · ${mp3.playbackRate}x`;
+  if(AP.cues){
+    let i=AP.cues.length-1;
+    while(i>0 && AP.cues[i].t>mp3.currentTime+0.2) i--;
+    if(i!==AP.capIdx){
+      AP.capIdx=i;
+      const w=$('#caps');
+      if(w){
+        w.querySelectorAll('.cap.on').forEach(x=>x.classList.remove('on'));
+        const cu=w.querySelector(`[data-ci="${i}"]`);
+        if(cu){ cu.classList.add('on'); cu.scrollIntoView({block:'center',behavior:'smooth'}); }
+      }
+    }
+  }
+});
+mp3.addEventListener('ended',()=>{
+  if(!AP.track) return;
+  delete store.pos[AP.track.id]; save();
+  if(AP.track.kind==='Chapter' && quizFor(AP.track)){ startQuiz(AP.track); return; }
+  const all=[...AP.list];
+  const i=all.findIndex(x=>x.id===AP.track.id);
+  if(i>=0&&i<all.length-1) playTrack(all[i+1]); else renderAudio();
+});
+function startQuiz(t){
+  AP.quiz={domain:domainOf(t),title:t.title,qs:quizFor(t),i:0,right:0,picked:null};
+  renderAudio();
+}
+function renderQuizPane(m){
+  const z=AP.quiz;
+  if(z.i>=z.qs.length){
+    const pct=Math.round(100*z.right/z.qs.length);
+    store.chq=store.chq||{}; store.chq[z.domain]={pct,t:Date.now()}; save();
+    m.append(el(`<div class="panel" style="text-align:center">
+      <h3>Chapter quiz — ${esc(z.title)}</h3>
+      <div class="big-num ${pct>=80?'pass':'fail'}">${pct}%</div>
+      <div class="hint">${z.right}/${z.qs.length} retained · ${pct>=80?'solid — move on':'re-listen to this chapter, then retake'}</div>
+      <div class="row"><button class="btn" id="zRetake">Retake</button><button class="btn pri" id="zDone">Done</button></div>
+    </div>`));
+    $('#zRetake').onclick=()=>{AP.quiz={...z,i:0,right:0,picked:null};renderAudio();};
+    $('#zDone').onclick=()=>{AP.quiz=null;renderAudio();};
+    return;
+  }
+  const q=z.qs[z.i], letters=['A','B','C','D'];
+  m.append(el(`<div class="panel">
+    <div class="hint">Chapter quiz · ${esc(z.title)} · Q ${z.i+1}/${z.qs.length}</div>
+    <div style="font-size:16px;font-weight:600;line-height:1.45;margin-top:4px">${esc(q.q)}</div>
+    <div id="zOpts">${q.opts.map((o,i)=>`<button class="qopt ${z.picked==null?'':(i===q.correct?'right':(i===z.picked?'wrong':''))}" data-o="${i}" ${z.picked!=null?'disabled':''}>${letters[i]}. ${esc(o)}</button>`).join('')}</div>
+    ${z.picked!=null?`<div class="qwhy">${z.picked===q.correct?'✓ Correct.':'✗ Not quite.'} ${esc(q.why||'')}</div><div class="row"><button class="btn pri" id="zNext">${z.i+1>=z.qs.length?'See score':'Next question'}</button></div>`:''}
+  </div>`));
+  m.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+    if(z.picked!=null) return;
+    z.picked=+b.dataset.o;
+    if(z.picked===q.correct) z.right++;
+    renderAudio();
+  });
+  const n=$('#zNext'); if(n) n.onclick=()=>{z.i++;z.picked=null;renderAudio();};
+}
+mp3.addEventListener('error',()=>{ if(AP.track){ AP.mp3ok=false; AP.track=null; renderAudio(); } });
+mp3.addEventListener('play',renderAudio); mp3.addEventListener('pause',renderAudio);
+function setMedia(t){
+  if(!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({title:t.title, artist:'MI Builder Exam', album:t.kind});
+  navigator.mediaSession.setActionHandler('seekbackward',()=>{mp3.currentTime=Math.max(0,mp3.currentTime-15);});
+  navigator.mediaSession.setActionHandler('seekforward',()=>{mp3.currentTime=Math.min(mp3.duration,mp3.currentTime+15);});
+}
+function renderCaps(){
+  const w=$('#caps'); if(!w||!AP.cues) return;
+  w.classList.remove('hide');
+  w.innerHTML=AP.cues.map((c,i)=>`<div class="cap ${i===AP.capIdx?'on':''}" data-ci="${i}">${c.type==='q'?'<span class="qa">Q</span>':c.type==='a'?'<span class="qa">A</span>':''}${esc(c.text)}</div>`).join('');
+  w.querySelectorAll('[data-ci]').forEach(d=>d.onclick=()=>{ mp3.currentTime=AP.cues[+d.dataset.ci].t; if(mp3.paused)mp3.play(); });
+}
+function renderAudio(){
+  if(view!=='audio') return;
+  const m=$('#main'); const {lec,drl}=tracks(); AP.list=[...lec,...drl];
+  const playing = AP.track && !mp3.paused;
+  if(AP.quiz){ m.innerHTML=''; renderQuizPane(m); return; }
+  m.innerHTML='';
+  m.append(el(`<div>
+    <div class="player">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="title">${AP.track?esc(AP.track.title):'Pick a chapter below'}</div>
+          <div class="now" id="pNow">${AP.track?'':'Studio-voice audiobook — plays with screen locked'}</div>
+        </div>
+        <span class="pill hd">HD VOICE</span>
+      </div>
+      <input type="range" class="seek" id="seek" min="0" step="1" value="0">
+      <div class="tp">
+        <button id="pBack">−15s</button>
+        <button class="big" id="pPlay">${playing?'⏸':'▶'}</button>
+        <button id="pFwd">+15s</button>
+        <button class="rate" id="pRate">${store.rate||1}x</button>
+      </div>
+    </div>
+    <div class="caps hide" id="caps"></div>
+    <div class="panel"><h3>🎙 Audiobook chapters</h3><div class="hint">Follow-along captions appear while playing · a retention quiz pops up when each chapter ends.</div>
+      ${lec.map(t=>{const sc=(store.chq||{})[domainOf(t)];return `<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">~${Math.round((t.words||1500)/150)} min${store.pos[t.id]>5?' · resumes '+fmt(store.pos[t.id]):''}</div></div>${sc?`<span class="badge ${sc.pct>=80?'pass':'fail'}">${sc.pct}%</span>`:''}${quizFor(t)?`<button class="chip" data-qz="${t.id}">quiz</button>`:''}<span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`}).join('')}
+    </div>
+    <div class="panel"><h3>🔁 Hands-free drills</h3><div class="hint">Question → pause to answer out loud → answer. One track per domain.</div>
+      ${drl.map(t=>`<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">${store.pos[t.id]>5?'resumes '+fmt(store.pos[t.id]):'from the top'}</div></div><span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`).join('')}
+    </div>
+    ${AP.mp3ok===false?`<div class="panel"><h3>⚠️ Audio files unreachable</h3><div class="hint">MP3s aren't available from this copy of the app (robot-voice fallback below). Open the Tailscale link on your phone for the real voice.</div><div class="row"><button class="btn" id="ttsLec">Play chapters with device voice</button></div></div>`:''}
+  </div>`));
+  const s=$('#seek');
+  s.oninput=()=>{s.dragging=true;};
+  s.onchange=()=>{mp3.currentTime=+s.value;s.dragging=false;};
+  $('#pPlay').onclick=()=>{ if(!AP.track){const t=AP.list[0]; if(t)playTrack(t); return;} mp3.paused?mp3.play():mp3.pause(); };
+  $('#pBack').onclick=()=>{mp3.currentTime=Math.max(0,mp3.currentTime-15);};
+  $('#pFwd').onclick=()=>{mp3.currentTime=Math.min(mp3.duration||1e9,mp3.currentTime+15);};
+  $('#pRate').onclick=()=>{const r=[1,1.25,1.5,0.85];const cur=+(store.rate||1);store.rate=r[(r.indexOf(cur)+1)%r.length];save();mp3.playbackRate=store.rate;$('#pRate').textContent=store.rate+'x';};
+  m.querySelectorAll('[data-tr]').forEach(d=>d.onclick=()=>{
+    const t=AP.list.find(x=>x.id===d.dataset.tr);
+    if(d.dataset.na){ alert('This track is still rendering — try again in a few minutes.'); return; }
+    if(AP.track&&AP.track.id===t.id){ mp3.paused?mp3.play():mp3.pause(); return; }
+    playTrack(t);
+  });
+  m.querySelectorAll('[data-qz]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const t=AP.list.find(x=>x.id===b.dataset.qz);
+    if(t) startQuiz(t);
+  });
+  if(AP.cues) renderCaps();
+  if(location.protocol.startsWith('http')){
+    AP.list.forEach(t=>fetch(t.file,{method:'HEAD'}).then(r=>{
+      if(!r.ok){ const d=m.querySelector(`[data-tr="${t.id}"]`); if(d){ d.dataset.na='1'; d.style.opacity=.45; const lbl=d.querySelector('.d'); if(lbl) lbl.textContent='rendering… check back soon'; const ic=d.querySelector('.play-ic'); if(ic) ic.textContent='⏳'; } }
+    }).catch(()=>{}));
+  }
+  const tl=$('#ttsLec'); if(tl) tl.onclick=ttsLectures;
+}
+function ttsLectures(){ // fallback only
+  const synth=window.speechSynthesis; if(!synth) return;
+  let li=0,pi=0,on=true;
+  const next=()=>{ if(!on)return; const L=B.lectures[li]; if(!L)return;
+    if(pi>=L.paras.length){li++;pi=0;return next();}
+    const u=new SpeechSynthesisUtterance(L.paras[pi]); u.rate=+(store.rate||1);
+    u.onend=()=>{pi++;next();}; synth.speak(u); };
+  synth.cancel(); next();
+  const stop=()=>{on=false;synth.cancel();document.removeEventListener('visibilitychange',stop);};
+}
+
+/* ============ STUDY ============ */
+let cur=null, flipped=false;
+function viewStudy(){
+  const m=$('#main'); m.innerHTML=chipsHTML();
+  const p=pool();
+  if(!p.length){ m.append(el('<div class="empty">No cards in this filter.</div>')); bindChips(m,viewStudy); return; }
+  if(!cur||!p.includes(cur)){ cur=weightedPick(p); flipped=false; }
+  const done=p.filter(c=>scoreOf(c.id)>=2).length;
+  m.append(el(`<div>
+    <div class="fcard" id="fc">
+      <span class="tag">${esc(cur.category)} · ${cur.section==='bl'?'B&L':'Trade'}</span>
+      <div class="q">${esc(cur.front)}</div>
+      <div class="a ${flipped?'':'hide'}">${esc(cur.back)}</div>
+      <span class="src">${esc(cur.source||'')}</span>
+    </div>
+    <div class="row ${flipped?'':'hide'}"><button class="btn bad" id="bA">✗ Missed it</button><button class="btn good" id="bG">✓ Got it</button></div>
+    <div class="row ${flipped?'hide':''}"><button class="btn pri" id="bF">Show answer</button></div>
+    <div class="meta-line"><span>${done}/${p.length} mastered in filter</span><span>card score ${scoreOf(cur.id)}</span></div>
+  </div>`));
+  bindChips(m,()=>{cur=null;viewStudy();});
+  const flip=()=>{flipped=true;viewStudy();};
+  $('#fc').onclick=()=>{if(!flipped)flip();};
+  $('#bF').onclick=flip;
+  const grade=ok=>{const s=store.cards[cur.id]||{s:0,n:0};s.s=Math.min(5,Math.max(-3,s.s+(ok?1:-2)));s.n++;s.t=Date.now();store.cards[cur.id]=s;save();cur=null;flipped=false;viewStudy();};
+  $('#bA').onclick=()=>grade(false);
+  $('#bG').onclick=()=>grade(true);
+}
+
+/* ============ QUIZ ============ */
+let qz=null;
+function viewQuiz(){
+  if(qz&&!qz.finished) return renderQuizQ();
+  const m=$('#main'); m.innerHTML=chipsHTML();
+  const last=store.quiz.slice(-5).reverse();
+  m.append(el(`<div>
+    <div class="panel"><h3>Timed self-graded sim · pass = 72.5%</h3>
+      <div class="row"><button class="btn" data-n="25">25 Q</button><button class="btn" data-n="50">50 Q</button><button class="btn pri" data-n="160">Full 160</button></div>
+      <div class="opt-row">Real exam: 160 questions, 240 minutes, one combined sitting.</div>
+    </div>
+    <div class="panel"><h3>Recent sims</h3>
+      ${last.length?last.map(r=>`<div class="list-item"><span class="t">${r.n}Q · ${r.pct}%</span><span class="d ${r.pct>=72.5?'pass':'fail'}">${r.pct>=72.5?'PASS':'FAIL'} · ${new Date(r.t).toLocaleDateString()}</span></div>`).join(''):'<div class="hint">none yet</div>'}
+    </div>
+  </div>`));
+  bindChips(m,viewQuiz);
+  m.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
+    const p=pool(); if(!p.length)return;
+    const n=Math.min(+b.dataset.n,p.length);
+    qz={qs:[...p].sort(()=>Math.random()-.5).slice(0,n),i:0,right:0,start:Date.now(),finished:false,flip:false};
+    renderQuizQ();
+  });
+}
+function renderQuizQ(){
+  const m=$('#main');
+  if(qz.i>=qz.qs.length){
+    qz.finished=true;
+    const pct=Math.round(1000*qz.right/qz.qs.length)/10;
+    store.quiz.push({n:qz.qs.length,pct,t:Date.now()});save();
+    m.innerHTML='';
+    m.append(el(`<div class="panel" style="text-align:center;margin-top:30px">
+      <div class="stat .lbl" style="color:var(--dim);font-size:12px;font-weight:700">RESULT</div>
+      <div class="big-num ${pct>=72.5?'pass':'fail'}">${pct}%</div>
+      <div style="color:var(--dim)">${qz.right}/${qz.qs.length} · need 72.5% · ${pct>=72.5?'PASS ✅':'FAIL — drill weak domains'}</div>
+      <div class="row"><button class="btn pri" id="qD">Done</button></div></div>`));
+    $('#qD').onclick=()=>{qz=null;viewQuiz();};
+    return;
+  }
+  const c=qz.qs[qz.i];
+  const elapsed=Math.floor((Date.now()-qz.start)/1000), budget=qz.qs.length*90;
+  m.innerHTML='';
+  m.append(el(`<div>
+    <div class="meta-line"><span>Q ${qz.i+1}/${qz.qs.length}</span><span>${Math.floor(elapsed/60)}m / ${Math.floor(budget/60)}m budget</span></div>
+    <div class="fcard"><span class="tag">${esc(c.category)}</span>
+      <div class="q">${esc(c.front)}</div>
+      <div class="a ${qz.flip?'':'hide'}">${esc(c.back)}</div>
+      <span class="src">${esc(c.source||'')}</span></div>
+    <div class="row ${qz.flip?'hide':''}"><button class="btn pri" id="qF">Reveal</button></div>
+    <div class="row ${qz.flip?'':'hide'}"><button class="btn bad" id="qW">✗ Wrong</button><button class="btn good" id="qR">✓ Right</button></div>
+  </div>`));
+  $('#qF').onclick=()=>{qz.flip=true;renderQuizQ();};
+  $('#qW').onclick=()=>{qz.flip=false;qz.i++;renderQuizQ();};
+  $('#qR').onclick=()=>{qz.right++;qz.flip=false;qz.i++;renderQuizQ();};
+}
+
+/* ============ STATS ============ */
+function viewStats(){
+  const m=$('#main'); m.innerHTML='';
+  const byDom=B.domains.map(d=>{
+    const cs=B.cards.filter(c=>c.domain===d);
+    return {d,total:cs.length,mastered:cs.filter(c=>scoreOf(c.id)>=2).length};
+  });
+  const totM=byDom.reduce((a,x)=>a+x.mastered,0);
+  const sims=store.quiz, lastPct=sims.length?sims[sims.length-1].pct:null;
+  m.append(el(`<div>
+    <div class="grid2">
+      <div class="stat"><div class="lbl">MASTERED</div><div class="big-num">${totM}<span style="font-size:16px;color:var(--dim)">/${B.cards.length}</span></div></div>
+      <div class="stat"><div class="lbl">LAST SIM</div><div class="big-num ${lastPct==null?'':(lastPct>=72.5?'pass':'fail')}">${lastPct==null?'—':lastPct+'%'}</div></div>
+    </div>
+    <div class="panel"><h3>Domain mastery</h3>
+      ${byDom.map(x=>`<div style="margin-top:10px"><div class="meta-line" style="margin:0"><span>${domLabel(x.d)}</span><span>${x.mastered}/${x.total}</span></div><div class="bar"><i style="width:${x.total?Math.round(100*x.mastered/x.total):0}%"></i></div></div>`).join('')}
+    </div>
+    <div class="panel"><div class="row"><button class="btn bad" id="wipe">Reset all progress</button></div></div>
+  </div>`));
+  $('#wipe').onclick=()=>{ if(confirm('Wipe all study progress?')){localStorage.removeItem('mib2');location.reload();} };
+}
+
+/* ============ router ============ */
+let view='audio';
+const views={audio:renderAudio,study:viewStudy,quiz:viewQuiz,stats:viewStats};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  view=b.dataset.v;
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  views[view]();
+});
+views[view]();
+</script>
+</body>
+</html>
