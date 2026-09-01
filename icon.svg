@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#171c27"/><stop offset="1" stop-color="#0b0e13"/>
+    </linearGradient>
+    <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc94d"/><stop offset="1" stop-color="#f5a623"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <!-- hardhat dome -->
+  <path d="M45 102 C45 74 65 54 90 54 C115 54 135 74 135 102 Z" fill="url(#hat)"/>
+  <!-- center ridge -->
+  <rect x="82" y="46" width="16" height="34" rx="8" fill="url(#hat)"/>
+  <!-- brim -->
+  <rect x="32" y="102" width="116" height="14" rx="7" fill="url(#hat)"/>
+  <!-- checkmark -->
+  <path d="M62 138 L82 156 L120 122" fill="none" stroke="#2fd282" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
