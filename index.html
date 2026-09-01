@@ -110,7 +110,9 @@ const domLabel = d => d.replace(/^\d+_/,'').replace(/-/g,' ').replace(/\b\w/g,c=
 const fmt = t => isFinite(t) ? `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}` : '–:–';
 
 let fDomain='all', fSection='all';
-const pool = () => B.cards.filter(c => (fDomain==='all'||c.domain===fDomain) && (fSection==='all'||c.section===fSection));
+const pool = () => B.cards.filter(c => (fDomain==='all'||(fDomain==='cram'?c.cram:c.domain===fDomain)) && (fSection==='all'||c.section===fSection));
+const hasCram = () => B.cards.some(c=>c.cram);
+const mcqPool = () => Object.entries(B.mcq||{}).filter(([d])=>fDomain==='all'||fDomain==='cram'||d===fDomain).flatMap(([d,qs])=>qs.map(q=>({...q,domain:d})));
 function weightedPick(cards){
   const w = cards.map(c => Math.max(1, 6 - scoreOf(c.id)));
   let r = Math.random()*w.reduce((a,b)=>a+b,0);
@@ -119,7 +121,7 @@ function weightedPick(cards){
 }
 function chipsHTML(){
   const s=[['all','B&L + Trade'],['bl','Business & Law'],['trade','Trade']].map(([v,l])=>`<button class="chip ${fSection===v?'on':''}" data-s="${v}">${l}</button>`).join('');
-  const d=['all',...B.domains].map(x=>`<button class="chip ${fDomain===x?'on':''}" data-d="${x}">${x==='all'?'All domains':domLabel(x)}</button>`).join('');
+  const d=['all',...(hasCram()?['cram']:[]),...B.domains].map(x=>`<button class="chip ${fDomain===x?'on':''}" data-d="${x}">${x==='all'?'All domains':x==='cram'?'🔥 Cram top-200':domLabel(x)}</button>`).join('');
   return `<div class="chips">${s}</div><div class="chips">${d}</div>`;
 }
 function bindChips(root,rr){
@@ -148,7 +150,8 @@ function quizFor(t){ return (B.quizzes||{})[domainOf(t)]||null; }
 function tracks(){
   const lec = B.lectures.map(L=>({id:L.id,title:L.title,file:MP3_BASE+L.id+'.mp3',kind:'Chapter',words:L.words}));
   const drl = B.domains.map(d=>({id:d+'_drill',title:domLabel(d)+' — drill',file:MP3_BASE+d+'_drill.mp3',kind:'Drill'}));
-  return {lec,drl};
+  const exm = Object.keys(B.mcq||{}).map(d=>({id:d+'_exam',title:domLabel(d)+' — audio exam',file:MP3_BASE+d+'_exam.mp3',kind:'Exam'}));
+  return {lec,drl,exm};
 }
 function playTrack(t){
   AP.track=t; AP.quiz=null;
@@ -237,7 +240,7 @@ function renderCaps(){
 }
 function renderAudio(){
   if(view!=='audio') return;
-  const m=$('#main'); const {lec,drl}=tracks(); AP.list=[...lec,...drl];
+  const m=$('#main'); const {lec,drl,exm}=tracks(); AP.list=[...lec,...exm,...drl];
   const playing = AP.track && !mp3.paused;
   if(AP.quiz){ m.innerHTML=''; renderQuizPane(m); return; }
   m.innerHTML='';
@@ -262,6 +265,9 @@ function renderAudio(){
     <div class="panel"><h3>🎙 Audiobook chapters</h3><div class="hint">Follow-along captions appear while playing · a retention quiz pops up when each chapter ends.</div>
       ${lec.map(t=>{const sc=(store.chq||{})[domainOf(t)];return `<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">~${Math.round((t.words||1500)/150)} min${store.pos[t.id]>5?' · resumes '+fmt(store.pos[t.id]):''}</div></div>${sc?`<span class="badge ${sc.pct>=80?'pass':'fail'}">${sc.pct}%</span>`:''}${quizFor(t)?`<button class="chip" data-qz="${t.id}">quiz</button>`:''}<span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`}).join('')}
     </div>
+    ${exm.length?`<div class="panel"><h3>📝 Audio exams — hands-free</h3><div class="hint">Reads a question + four choices → pause to answer out loud → gives the answer and why.</div>
+      ${exm.map(t=>`<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">${store.pos[t.id]>5?'resumes '+fmt(store.pos[t.id]):'30 questions'}</div></div><span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`).join('')}
+    </div>`:''}
     <div class="panel"><h3>🔁 Hands-free drills</h3><div class="hint">Question → pause to answer out loud → answer. One track per domain.</div>
       ${drl.map(t=>`<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">${store.pos[t.id]>5?'resumes '+fmt(store.pos[t.id]):'from the top'}</div></div><span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`).join('')}
     </div>
@@ -333,11 +339,56 @@ function viewStudy(){
 }
 
 /* ============ QUIZ ============ */
-let qz=null;
+let qz=null, mz=null;
+function renderMC(){
+  const m=$('#main'); m.innerHTML='';
+  if(mz.i>=mz.qs.length){
+    const pct=Math.round(100*mz.right/mz.qs.length);
+    store.mcq=store.mcq||[]; store.mcq.push({n:mz.qs.length,pct,t:Date.now()}); save();
+    const mins=((Date.now()-mz.start)/60000).toFixed(1);
+    m.append(el(`<div class="panel" style="text-align:center;margin-top:24px">
+      <div class="hint">LIGHTNING RESULT · ${mins} min</div>
+      <div class="big-num ${pct>=72.5?'pass':'fail'}">${pct}%</div>
+      <div class="hint">${mz.right}/${mz.qs.length} · exam pass line 72.5%</div>
+      <div class="row"><button class="btn" id="mAgain">Go again</button><button class="btn pri" id="mDone">Done</button></div></div>`));
+    $('#mAgain').onclick=()=>{startMC(mz.qs.length);};
+    $('#mDone').onclick=()=>{mz=null;viewQuiz();};
+    return;
+  }
+  const q=mz.qs[mz.i], L=['A','B','C','D'];
+  m.append(el(`<div>
+    <div class="meta-line"><span>⚡ Q ${mz.i+1}/${mz.qs.length}</span><span>${mz.right} right · ${Math.floor((Date.now()-mz.start)/1000)}s</span></div>
+    <div class="panel">
+      <div style="font-size:16px;font-weight:600;line-height:1.45">${esc(q.q)}</div>
+      <div>${q.opts.map((o,i)=>`<button class="qopt ${mz.picked==null?'':(i===q.correct?'right':(i===mz.picked?'wrong':''))}" data-o="${i}" ${mz.picked!=null?'disabled':''}>${L[i]}. ${esc(o)}</button>`).join('')}</div>
+      ${mz.picked!=null?`<div class="qwhy">${mz.picked===q.correct?'✓':'✗'} ${esc(q.why||'')}</div><div class="row"><button class="btn pri" id="mNext">Next</button></div>`:''}
+    </div></div>`));
+  m.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+    if(mz.picked!=null) return;
+    mz.picked=+b.dataset.o;
+    if(mz.picked===q.correct) mz.right++;
+    renderMC();
+  });
+  const n=$('#mNext'); if(n) n.onclick=()=>{mz.i++;mz.picked=null;renderMC();};
+}
+function startMC(n){
+  const p=mcqPool(); if(!p.length) return;
+  mz={qs:[...p].sort(()=>Math.random()-.5).slice(0,Math.min(n,p.length)),i:0,right:0,picked:null,start:Date.now()};
+  renderMC();
+}
 function viewQuiz(){
+  if(mz) return renderMC();
   if(qz&&!qz.finished) return renderQuizQ();
   const m=$('#main'); m.innerHTML=chipsHTML();
   const last=store.quiz.slice(-5).reverse();
+  const lastMC=(store.mcq||[]).slice(-3).reverse();
+  if(Object.keys(B.mcq||{}).length){
+    m.append(el(`<div class="panel"><h3>⚡ Lightning exam — tap to answer</h3>
+      <div class="row"><button class="btn pri" id="mc10">10 Q · ~3 min</button><button class="btn" id="mc25">25 Q</button><button class="btn" id="mc50">50 Q</button></div>
+      <div class="opt-row">Real multiple choice, auto-graded, uses current domain filter.${lastMC.length?' Recent: '+lastMC.map(r=>r.pct+'%').join(' · '):''}</div>
+    </div>`));
+    $('#mc10').onclick=()=>startMC(10); $('#mc25').onclick=()=>startMC(25); $('#mc50').onclick=()=>startMC(50);
+  }
   m.append(el(`<div>
     <div class="panel"><h3>Timed self-graded sim · pass = 72.5%</h3>
       <div class="row"><button class="btn" data-n="25">25 Q</button><button class="btn" data-n="50">50 Q</button><button class="btn pri" data-n="160">Full 160</button></div>
