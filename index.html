@@ -265,7 +265,7 @@ function renderQuizPane(m){
   });
   const n=$('#zNext'); if(n) n.onclick=()=>{z.i++;z.picked=null;renderAudio();};
 }
-mp3.addEventListener('error',()=>{ if(AP.track){ AP.mp3ok=false; AP.track=null; renderAudio(); } });
+mp3.addEventListener('error',()=>{ if(AP.track&&!AP.track.tts){ const t=AP.track; AP.mp3ok=false; AP.track=null; if(t.kind==='Chapter'&&t.paras&&window.speechSynthesis){ ttsChapter(t); return; } renderAudio(); } });
 mp3.addEventListener('play',renderAudio); mp3.addEventListener('pause',renderAudio);
 function setMedia(t){
   if(!('mediaSession' in navigator)) return;
@@ -313,12 +313,12 @@ function renderAudio(){
     <div class="panel"><h3>🔁 Hands-free drills</h3><div class="hint">Question → pause to answer out loud → answer. One track per domain.</div>
       ${drl.map(t=>`<div class="list-item ${AP.track&&AP.track.id===t.id?'playing':''}" data-tr="${t.id}"><div><div class="t">${esc(t.title)}</div><div class="d">${store.pos[t.id]>5?'resumes '+fmt(store.pos[t.id]):'from the top'}</div></div><span class="play-ic">${AP.track&&AP.track.id===t.id&&playing?'⏸':'▶'}</span></div>`).join('')}
     </div>
-    ${AP.mp3ok===false?`<div class="panel"><h3>⚠️ Audio files unreachable</h3><div class="hint">MP3s aren't available from this copy of the app (robot-voice fallback below). Open the Tailscale link on your phone for the real voice.</div><div class="row"><button class="btn" id="ttsLec">Play chapters with device voice</button></div></div>`:''}
+    ${AP.mp3ok===false?`<div class="panel"><h3>🎙 Studio audio not available for that track yet</h3><div class="hint">Chapters marked ⏳ are still rendering. Tap any chapter to hear it read with your device voice now; the studio voice takes over automatically once its file exists.</div><div class="row"><button class="btn" id="ttsLec">Play chapters with device voice</button></div></div>`:''}
   </div>`));
   const s=$('#seek');
   s.oninput=()=>{s.dragging=true;};
   s.onchange=()=>{mp3.currentTime=+s.value;s.dragging=false;};
-  $('#pPlay').onclick=()=>{ if(AP.track&&AP.track.tts){ if(speechSynthesis.paused) speechSynthesis.resume(); else if(speechSynthesis.speaking) speechSynthesis.pause(); return; } if(!AP.track){const t=AP.list[0]; if(t)playTrack(t); return;} mp3.paused?mp3.play():mp3.pause(); };
+  $('#pPlay').onclick=()=>{ if(AP.track&&AP.track.tts){ if(speechSynthesis.paused) speechSynthesis.resume(); else if(speechSynthesis.speaking) speechSynthesis.pause(); return; } if(!AP.track){const ok=AP.list.find(x=>{const d=m.querySelector(`[data-tr="${x.id}"]`);return d&&!d.dataset.na;}); if(ok){playTrack(ok);return;} const ch=AP.list.find(x=>x.kind==='Chapter'&&x.paras); if(ch&&window.speechSynthesis){ttsChapter(ch);} else alert('Audio for this track is still rendering. Try again in a few minutes.'); return;} mp3.paused?mp3.play():mp3.pause(); };
   $('#pBack').onclick=()=>{mp3.currentTime=Math.max(0,mp3.currentTime-15);};
   $('#pFwd').onclick=()=>{mp3.currentTime=Math.min(mp3.duration||1e9,mp3.currentTime+15);};
   $('#pRate').onclick=()=>{const r=[1,1.25,1.5,0.85];const cur=+(store.rate||1);store.rate=r[(r.indexOf(cur)+1)%r.length];save();mp3.playbackRate=store.rate;$('#pRate').textContent=store.rate+'x';};
