@@ -126,7 +126,8 @@ select{background:var(--panel);color:var(--txt);border:1px solid var(--line);bor
   <div class="trk" id="trk"><button data-t="builder">🏗 Builder</button><button data-t="law">⚖️ Law</button><button data-t="social">🤝 Social</button></div></header>
 <main id="main"></main>
 <nav>
-  <button data-v="audio" class="on"><span class="ic">🎧</span>Listen</button>
+  <button data-v="plan" class="on"><span class="ic">📅</span>Plan</button>
+  <button data-v="audio"><span class="ic">🎧</span>Listen</button>
   <button data-v="read"><span class="ic">📖</span>Read</button><button data-v="study"><span class="ic">🃏</span>Study</button>
   <button data-v="quiz"><span class="ic">⏱</span>Quiz</button>
   <button data-v="stats"><span class="ic">📊</span>Stats</button>
@@ -165,14 +166,17 @@ let trackId = new URLSearchParams(location.search).get('track')||localStorage.ge
 let T=TRACKS[trackId], B=T.data(), store={};
 function loadStore(){
   store = JSON.parse(localStorage.getItem(T.store)||'{}');
-  store.cards = store.cards||{}; store.quiz = store.quiz||[]; store.pos = store.pos||{};
+  store.cards = store.cards||{}; store.quiz = store.quiz||[]; store.pos = store.pos||{}; store.plan = store.plan||{};
 }
 loadStore();
 const save = () => localStorage.setItem(T.store, JSON.stringify(store));
 function trackChrome(){
   // A read-only track has nothing to show on Listen/Study/Quiz/Stats, so those tabs are hidden
-  // rather than left to render an empty screen.
-  document.querySelectorAll('nav button').forEach(b => b.hidden = !!T.readOnly && b.dataset.v !== 'read');
+  // rather than left to render an empty screen. Plan is builder-only (it's the PSI exam sprint).
+  document.querySelectorAll('nav button').forEach(b => {
+    if(b.dataset.v==='plan'){ b.hidden = trackId!=='builder'; return; }
+    b.hidden = !!T.readOnly && b.dataset.v !== 'read';
+  });
 }
 function paintHeader(){
   $('#appTitle').textContent = T.title;
@@ -192,6 +196,7 @@ function switchTrack(id){
   trackId=id; T=TRACKS[id]; B=T.data(); localStorage.setItem('examos_track',id);
   loadStore(); fDomain='all'; fSection='all'; cur=null; flipped=false; qz=null; mz=null;
   rdOpen=null; window.onscroll=null;
+  if(view==='plan' && id!=='builder') view='audio';
   if(T.readOnly && view!=='read') view='read';
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===view));
   paintHeader(); views[view]();
@@ -512,12 +517,13 @@ function viewQuiz(){
     </div>
   </div>`));
   bindChips(m,viewQuiz);
-  m.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
-    const p=pool(); if(!p.length)return;
-    const n=Math.min(+b.dataset.n,p.length);
-    qz={qs:[...p].sort(()=>Math.random()-.5).slice(0,n),i:0,right:0,start:Date.now(),finished:false,flip:false};
-    renderQuizQ();
-  });
+  m.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>startSim(+b.dataset.n));
+}
+function startSim(n){
+  const p=pool(); if(!p.length) return;
+  const nn=Math.min(n,p.length);
+  qz={qs:[...p].sort(()=>Math.random()-.5).slice(0,nn),i:0,right:0,start:Date.now(),finished:false,flip:false};
+  renderQuizQ();
 }
 function renderQuizQ(){
   const m=$('#main');
@@ -571,6 +577,122 @@ function viewStats(){
     <div class="panel"><div class="row"><button class="btn bad" id="wipe">Reset all progress</button></div></div>
   </div>`));
   $('#wipe').onclick=()=>{ if(confirm(`Wipe all ${T.title} progress?`)){localStorage.removeItem(T.store);location.reload();} };
+}
+
+/* ============ PLAN — 2-3 week fast track ============ */
+/* Built from the official PSI content weights (README) + a domain-by-domain pass that split the
+   220-card cram set into true rote (a regulator picked the number, no shortcut) vs formulas/concepts
+   a builder can rebuild live (markup/margin, takeoff math, swell/shrink, U=1/R). Days are self-paced
+   checkboxes, not calendar-locked — he has a job, some days slip. */
+function tb(label,pt,pd,pn){ return `<button class="chip" data-pt="${pt}" data-pd="${pd||''}" ${pn?`data-pn="${pn}"`:''}>${esc(label)}</button>`; }
+const PLAN_DAYS = [
+ {d:1, ttl:`Lock the date, find your floor`, mins:90, core:true, tasks:[
+   `Submit your LARA application today if it is not already in — it starts your 1-year clock to finish everything.`,
+   `Book your PSI test date now, about 16-17 days out. A paid date is the deadline that makes the rest of this plan happen.`,
+   tb('Run a full cold sim now, before studying anything →','sim',null,160),
+ ], gate:`Whatever you score is today's floor, not a grade. 40-55% cold is normal and means nothing. Write it down and move on.`},
+ {d:2, ttl:`Licensing Law — zero shortcuts (13 of 50 B&L Q)`, mins:45, core:true, note:`Every number in this domain is a regulator's pick, not logic. Full memorization, no way around it.`, tasks:[
+   tb('Cram deck: Licensing Law →','study','01_licensing-law'),
+   tb('10Q lightning round →','mcq','01_licensing-law',10),
+ ]},
+ {d:3, ttl:`Liens, Insurance & Bonds — memorize the deadlines, reason the policies (11 of 50 Q)`, mins:50, core:true, note:`The 3 policy types (builders risk / CGL / workers comp) you only need to understand once, then reason live. The deadline numbers — the notice and filing windows — are pure rote, no shortcut.`, tasks:[
+   tb('Cram deck: Liens/Insurance/Bonds →','study','02_liens-insurance-bonds'),
+   tb('10Q lightning round →','mcq','02_liens-insurance-bonds',10),
+   tb('5-10 min: re-touch Day 2 →','study','01_licensing-law'),
+ ]},
+ {d:4, ttl:`Personnel + MIOSHA, first pass (2 of 50 B&L + 10 of 110 Trade Q)`, mins:40, core:true, tasks:[
+   tb('Cram deck: MIOSHA/Personnel →','study','05_miosha-safety'),
+   tb('10Q lightning round →','mcq','05_miosha-safety',10),
+   tb('Re-touch Days 2-3 →','study','cram'),
+ ]},
+ {d:5, ttl:`Contracts & HIFA — drill the pair, reason the rest (7 of 50 Q)`, mins:50, core:true, note:`HIFA's rescission window vs HSSA's are built to be confused with each other — drill that pair hard. General contract law (breach, mitigation) you already half-know from running a business; skim it once, don't flashcard it.`, tasks:[
+   tb('Cram deck: Contracts/HIFA →','study','03_contracts-hifa'),
+   tb('10Q lightning round →','mcq','03_contracts-hifa',10),
+   tb('Re-touch cram so far →','study','cram'),
+ ]},
+ {d:6, ttl:`Business Management — your best shortcut domain (~19 of 50 Q)`, mins:55, core:true, note:`Markup/margin, overhead rate, and break-even are each one formula — learn the formula, not a table of numbers. Workers-comp triggers and payroll-tax numbers have zero logic behind them; those you drill cold.`, tasks:[
+   tb('Cram deck: Business Mgmt →','study','04_business-management'),
+   tb('10Q lightning round →','mcq','04_business-management',10),
+ ]},
+ {d:7, ttl:`Week 1 checkpoint`, mins:90, core:true, tasks:[
+   tb('50Q lightning round, Cram filter →','mcq','cram',50),
+   `Re-card every single miss before moving on to trade material.`,
+ ], gate:`If Business & Law doesn't clearly feel sharper than Day 1, repeat this day instead of pushing into trade behind on legal.`},
+ {d:8, ttl:`Plans & Trade Math — five formulas, not a hundred numbers (14 of 110 Q)`, mins:55, core:true, note:`Board feet, concrete yards, brick/block counts, roofing squares, and the stair rise/run steps are all formulas — do each by hand twice today, that survives forgetting better than a memorized number ever does. Permit-exemption sizes and trade-license hour counts, though, are arbitrary — no shortcut, drill those.`, tasks:[
+   tb('Cram deck: Plans/Math/Trades →','study','10_plans-math-trades'),
+   tb('10Q lightning round →','mcq','10_plans-math-trades',10),
+ ]},
+ {d:9, ttl:`Sitework, Concrete & Foundations — biggest trade block (32 of 110 Q)`, mins:55, core:true, note:`Concrete-yardage math and swell/shrink direction (loose dirt grows, compacted shrinks) you can derive live. The frost depth, the soil-bearing table, and the anchor-bolt rule are arbitrary Michigan numbers — memorize those cold.`, tasks:[
+   tb('Cram deck: Sitework/Concrete/Foundations →','study','06_sitework-concrete-foundations'),
+   tb('10Q lightning round →','mcq','06_sitework-concrete-foundations',10),
+ ]},
+ {d:10, ttl:`Carpentry & Framing — looks logical, isn't (16 of 110 Q)`, mins:55, core:true, note:`This is the trap domain. Stair numbers, notching fractions, and the collar-tie vs rafter-tie pair look like they should follow a pattern — they don't. Memorize them as pairs; don't try to reason them out on exam day.`, tasks:[
+   tb('Cram deck: Carpentry/Framing →','study','07_carpentry-framing'),
+   tb('10Q lightning round →','mcq','07_carpentry-framing',10),
+ ]},
+ {d:11, ttl:`Masonry, Roofing & Siding — number-pair traps (22 of 110 Q)`, mins:55, core:true, note:`Almost nothing here is derivable — tie spacing, weephole spacing, chimney clearances, and ice-barrier numbers are deliberately close together so you pick the wrong one. Drill them as sets, not single facts.`, tasks:[
+   tb('Cram deck: Masonry/Roofing/Siding →','study','08_masonry-roofing-siding'),
+   tb('10Q lightning round →','mcq','08_masonry-roofing-siding',10),
+ ]},
+ {d:12, ttl:`Envelope & Interior (~15-17 of 110 Q)`, mins:55, core:true, note:`Zone 5A ceiling is R-38, not the national R-49 — the single biggest trap in this domain, zero logic to it. U-factor = 1/R and the egress-area check (multiply, don't eyeball) are one-time logic, not flashcards.`, tasks:[
+   tb('Cram deck: Envelope/Interior →','study','09_envelope-interior'),
+   tb('10Q lightning round →','mcq','09_envelope-interior',10),
+ ]},
+ {d:13, ttl:`Sim #1 — the real gate`, mins:180, core:true, tasks:[
+   tb('Full 160Q / 240 min sim →','sim',null,160),
+   `Run it exactly like the real thing: phone away, closed book, only a silent non-printing calculator — no Construction Master.`,
+ ], gate:`Score it by domain, not just overall — that's what decides where tomorrow goes.`},
+ {d:14, ttl:`Error-log day`, mins:50, core:true, tasks:[
+   `Re-card every miss from Sim #1, sorted by domain.`,
+   tb('15 min extra cram touch →','study','cram'),
+ ]},
+ {d:15, ttl:`Sim #2 — go / no-go`, mins:180, core:true, tasks:[
+   tb('Full 160Q / 240 min sim →','sim',null,160),
+ ], gate:`72.5%+ on this AND Sim #1 (or close behind it) means you're ready to sit. Under 70% on this one — use the buffer days below and move your PSI date (2+ days' notice), don't sit it yet.`},
+ {d:16, ttl:`Buffer: weakest-domain drill, rote-first`, mins:50, core:false, tasks:[`Re-drill whichever of Licensing Law, MIOSHA, Carpentry/Framing, or Masonry/Roofing/Siding scored weakest on Sim #2 — those four have zero shortcuts, so a weak score there is a real gap, not bad luck.`]},
+ {d:17, ttl:`Buffer: next-weakest domain`, mins:50, core:false, tasks:[`Same as Day 16, next-weakest domain.`]},
+ {d:18, ttl:`Buffer: next-weakest domain`, mins:50, core:false, tasks:[`Same again, third-weakest domain.`]},
+ {d:19, ttl:`Buffer: next-weakest domain`, mins:50, core:false, tasks:[`Same again, fourth-weakest domain.`]},
+ {d:20, ttl:`Buffer: Sim #3`, mins:180, core:false, tasks:[tb('Full 160Q / 240 min sim →','sim',null,160)], gate:`Two consecutive sims at 72.5%+ — go sit it.`},
+ {d:21, ttl:`Final 48 hours`, mins:20, core:false, tasks:[`No new material. Light cram review only. Sleep both nights.`,`Bring photo ID and a basic silent non-printing calculator — no Construction Master, Handyman, or Measure Master.`]},
+];
+function viewPlan(){
+  const m=$('#main');
+  const doneN = PLAN_DAYS.filter(x=>x.core && store.plan[x.d]).length;
+  const coreN = PLAN_DAYS.filter(x=>x.core).length;
+  m.innerHTML = `<div class="panel">
+      <h3>📅 2-3 week fast track</h3>
+      <div class="hint" style="margin-top:6px">You don't need all 791 cards cold. Around 165-180 of the 220 cram cards are true rote — a regulator picked the number, no logic connects it — mostly Licensing Law, MIOSHA, Masonry/Roofing/Siding, and Carpentry/Framing's stair and tie numbers. The rest — markup/margin math, takeoff formulas, swell/shrink, U-factor — you learn as one rule each and rebuild it live. That split is what this tab is built around. Each day's question-count is that domain's own blueprint weight from the corpus, checked against the PSI candidate bulletin.</div>
+      <div class="meta-line" style="margin-top:10px"><span>Core days done</span><span>${doneN}/${coreN}</span></div>
+      <div class="bar"><i style="width:${coreN?Math.round(100*doneN/coreN):0}%"></i></div>
+    </div>
+    ${PLAN_DAYS.filter(x=>x.core).map(dayPanel).join('')}
+    <div class="panel"><h3>If you need more time</h3><div class="hint">Use 2+ days' notice to move your PSI date rather than sit it under the line.</div></div>
+    ${PLAN_DAYS.filter(x=>!x.core).map(dayPanel).join('')}
+  `;
+  bindPlan(m);
+}
+function dayPanel(x){
+  const done = !!store.plan[x.d];
+  return `<div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <h3>Day ${x.d} — ${esc(x.ttl)}</h3>
+      <span class="pill ${done?'hd':''}">${done?'✓ done':x.mins+' min'}</span>
+    </div>
+    ${x.note?`<div class="notice">${esc(x.note)}</div>`:''}
+    <ul style="margin:10px 0 0 18px;line-height:1.7;font-size:14px">${x.tasks.map(t=>`<li>${t}</li>`).join('')}</ul>
+    ${x.gate?`<div class="notice" style="border-left:3px solid var(--amber)">🎯 ${esc(x.gate)}</div>`:''}
+    <div class="row"><button class="btn ${done?'':'pri'}" data-done="${x.d}">${done?'Mark not done':'✓ Mark day done'}</button></div>
+  </div>`;
+}
+function bindPlan(m){
+  m.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>planAction(b.dataset.pt,b.dataset.pd,+b.dataset.pn||undefined));
+  m.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{ const d=+b.dataset.done; store.plan[d]=!store.plan[d]; save(); viewPlan(); });
+}
+function planAction(type,dom,n){
+  if(type==='study'){ fDomain=dom||'cram'; setView('study'); }
+  else if(type==='mcq'){ fDomain=dom||'cram'; setView('quiz'); startMC(n||10); }
+  else if(type==='sim'){ fDomain='all'; setView('quiz'); startSim(n||160); }
 }
 
 
@@ -691,8 +813,8 @@ function rdChapter(){
 }
 
 /* ============ router ============ */
-let view='audio';
-const views={audio:renderAudio,read:renderRead,study:viewStudy,quiz:viewQuiz,stats:viewStats};
+let view = trackId==='builder' ? 'plan' : 'audio';
+const views={plan:viewPlan,audio:renderAudio,read:renderRead,study:viewStudy,quiz:viewQuiz,stats:viewStats};
 function setView(v){
   if(view==='read'){ window.onscroll=null; rdOpen=null; }
   view=v;
